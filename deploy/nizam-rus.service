@@ -1,0 +1,74 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Systemd service file for NIZAM-RUS FastAPI backend
+# ─────────────────────────────────────────────────────────────────────────────
+#
+# SETUP:
+#   1. Edit the paths below (User, WorkingDirectory, ExecStart) to match your server.
+#   2. Copy to systemd:    sudo cp nizam-rus.service /etc/systemd/system/
+#   3. Reload daemon:      sudo systemctl daemon-reload
+#   4. Enable on boot:     sudo systemctl enable nizam-rus
+#   5. Start now:          sudo systemctl start nizam-rus
+#   6. Check status:       sudo systemctl status nizam-rus
+#   7. View logs:          sudo journalctl -u nizam-rus -f
+#
+# RESTART AFTER CODE CHANGES:
+#   sudo systemctl restart nizam-rus
+# ─────────────────────────────────────────────────────────────────────────────
+
+[Unit]
+Description=NIZAM-RUS FastAPI Backend (Gunicorn + Uvicorn workers)
+After=network.target
+Wants=network.target
+
+[Service]
+# ── Run as a non-root user for security ──────────────────────────────────────
+User=www-data
+Group=www-data
+
+# ── Working directory — where your project lives ──────────────────────────────
+WorkingDirectory=/var/www/nizam-rus-backend
+
+# ── Environment — load variables from .env ───────────────────────────────────
+EnvironmentFile=/var/www/nizam-rus-backend/.env
+
+# ── Start command ─────────────────────────────────────────────────────────────
+# Gunicorn manages multiple Uvicorn workers.
+# Workers = (2 × CPU cores) + 1 is the standard formula.
+# On a 2-core VPS: --workers 5
+# On a 4-core server: --workers 9
+#
+# --bind 127.0.0.1:8000 → only listen on localhost (Nginx proxies to here)
+# --worker-class uvicorn.workers.UvicornWorker → async FastAPI support
+# --access-logfile - → send access logs to stdout → journalctl captures them
+ExecStart=/var/www/nizam-rus-backend/venv/bin/gunicorn \
+    app.main:app \
+    --workers 5 \
+    --worker-class uvicorn.workers.UvicornWorker \
+    --bind 127.0.0.1:8000 \
+    --timeout 30 \
+    --keep-alive 5 \
+    --max-requests 1000 \
+    --max-requests-jitter 100 \
+    --access-logfile - \
+    --error-logfile - \
+    --log-level info
+
+# ── Graceful reload on SIGHUP (zero-downtime restarts) ───────────────────────
+ExecReload=/bin/kill -s HUP $MAINPID
+
+# ── Restart policy ────────────────────────────────────────────────────────────
+Restart=on-failure
+RestartSec=5s
+StartLimitInterval=60s
+StartLimitBurst=3         # Stop trying to restart after 3 failures in 60s
+
+# ── Resource limits ───────────────────────────────────────────────────────────
+LimitNOFILE=65536         # Increase max open file descriptors (needed for many connections)
+
+# ── Security hardening ────────────────────────────────────────────────────────
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,26 @@
+# ── Core API ──────────────────────────────────────────────────────────────────
+fastapi==0.111.0
+uvicorn[standard]==0.29.0
+python-multipart==0.0.9      # Required for FastAPI form parsing
+
+# ── Database ──────────────────────────────────────────────────────────────────
+sqlalchemy==2.0.30            # ORM with full async support
+aiosqlite==0.20.0             # Async SQLite driver
+alembic==1.13.1               # Schema migrations
+
+# ── Auth / Security ───────────────────────────────────────────────────────────
+python-jose[cryptography]==3.3.0   # JWT encoding / decoding
+passlib[bcrypt]==1.7.4             # Password hashing (bcrypt)
+
+# ── Data validation ───────────────────────────────────────────────────────────
+pydantic==2.7.1
+pydantic-settings==2.2.1      # Settings management via .env
+
+# ── Email ─────────────────────────────────────────────────────────────────────
+resend==1.1.0                 # Resend email SDK (swap for smtplib if preferred)
+# OR uncomment to use smtplib-only (no extra dep needed, it's stdlib):
+# aiosmtplib==3.0.1           # Async SMTP (stdlib smtplib is sync-only)
+
+# ── Misc ──────────────────────────────────────────────────────────────────────
+python-dotenv==1.0.1
+httpx==0.27.0                 # For async testing / internal HTTP calls
